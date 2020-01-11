@@ -1,0 +1,21 @@
+<h1>Environment Information</h1>
+<tcl>
+proc dumparray {n} {
+    puts "<h2>$n</h2>"
+    puts "<ul>"
+    foreach v [lsort [array names $n]] {
+        puts "<li>$v = [set ${n}($v)]"
+    }
+    puts "</ul>"
+}
+
+dumparray ::CGI
+dumparray ::COOKIE
+dumparray ::QUERY
+#dumparray ::env
+
+#puts [info library]
+#puts [info loaded]
+
+#package require expat
+</tcl>

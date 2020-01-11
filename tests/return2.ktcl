@@ -1,0 +1,17 @@
+<h1>another test of return</h1>
+This line is at the top of the file.<br>
+<tcl>
+    if {![info exists QUERY(return)]} {
+        puts "usage: return2.ktcl?return=yes/no<br>"
+        return
+    } elseif {$QUERY(return) == "yes"} {
+        puts "executing return, you should not see one more line.<br>"
+        return
+    } elseif {$QUERY(return) == "no"} {
+        puts "not executing return, you should see one more line.<br>"
+    } else {
+        puts "usage: return2.ktcl?return=yes/no<br>"
+        return
+    }
+</tcl>
+This line is at the bottom of the file.

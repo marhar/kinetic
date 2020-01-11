@@ -1,0 +1,16 @@
+This page will create and rename a proc.  It should succeed.<p>
+<tcl>
+catch {rename foo1 {}}
+catch {rename foo2 {}}
+proc foo1 {} {}
+set x1 [info procs foo?]
+puts "defined foo procs: $x1<p>"
+rename foo1 foo2
+set x2 [info procs foo?]
+puts "defined foo procs: $x2<p>"
+if {$x1 == "foo1" && $x2 == "foo2"} {
+    puts "<p><b>Success!</b>"
+} else {
+    puts "<p><b>Something is wrong!!!</b>"
+}
+</tcl>

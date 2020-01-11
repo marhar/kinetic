@@ -1,0 +1,118 @@
+Programming web pages using the the KAP engine
+
+Syntax
+
+	The syntax for a KAP page is the same as for normal
+	HTML web pages.  One pair of tags are added: <tcl>
+	and </tcl>.  Tcl code can be added to a web page
+	between these tags.
+
+	example:
+
+	<H1>This is a sample ktcl page</H1>
+	<tcl>
+		puts "hello, world!<p>"
+	</tcl>
+	Notice how HTML and Tcl can be mixed together.
+
+API
+
+	Kap-Tcl is standard Tcl, with these additions:
+
+	Namespace
+
+	All special Kap-Tcl commands  are in the ::kap namespace.
+
+	Variables
+
+	Several special variables contain information about
+	the web request.
+
+		cgi -- an array with all the information provided
+		by the HTTP client and server.
+
+		cookie -- an array which holds any cookies provided
+		by the client.
+
+		query -- an array holding the HTTP GET or POST
+		parameters sent by the client.
+
+		See the demo page environment.ktcl for examples
+		of the contents of these arrays.
+
+	Functions
+
+		::kap::loadpage filename
+		
+		Load the Kap page in filename.
+
+		::kap::setcookie name value expiration path
+
+		Create a cookie which is sent to the client.
+		This must be called before any other data is
+		sent to the client.
+
+		::kap::redirect url 
+		::kap::escapeCGI str 
+		::kap::unescapeCGI str 
+
+		These commands are not implemented, but will
+		be if necesary for existing programs to work.
+
+		return 
+
+		Executing "return" stops execution of the Kap-Tcl
+		page.
+
+Initialization File
+
+	The file "kap-init.tcl" is executed by the Kap engine if
+	it is present in the startup directory.
+
+	This is the correct place to load extensions, make database
+	connections, etc.
+
+Adding Custom Functions
+
+	The initialization file can contain "package require", "load",
+	and "source" commands to load Tcl extensions into the Kap
+	engine.
+
+Accessing Data
+
+	Note that the page is executed as a Tcl procedure, so access
+	to global variables should use the correct scoping.  (For
+	example, to access global variable argv, use $::argv).
+
+Error Handling
+
+	If there is an error while executing the page, the file
+	kap-errors.log will contain details.
+
+
+Examples
+
+	These examples are provide as part of the Kap Engine.
+
+	hello world -- simple "hello world" program
+
+	intentional error -- show what happens when a Tcl error
+	is encountered
+
+	show source -- print the source code for a particular
+	ktcl page.
+
+	server uptime -- use kTcl features to access and display
+	system information.
+
+	form processing
+	showenv -- show the environment, CGI, and HTTP parameters
+	for the current page.
+
+	simple counter -- count page hits.
+
+	simple counter with oracle -- count page hits using oracle.
+
+	simple counter with cookies -- count page hits using cookies.
+
+	cgi.tcl examples

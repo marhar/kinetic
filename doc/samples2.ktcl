@@ -1,0 +1,42 @@
+<!-- samples2.ktcl -- samples and descriptions --!>
+<h1>Samples</h1>
+<tcl>
+proc sample {name file description} {
+    puts "<h2>$name</h2>"
+    puts "$description"
+    puts "<p><a href=$file>View Page</a>"
+    puts " | <a href=viewsource.ktcl?file=$file>View Source</a>"
+}
+
+sample "Hello, World!" hello.ktcl "A simple Hello, World program.
+You can see how easy it is to get started with a ktcl page."
+
+sample "Counter" cookie-counter.ktcl "A page hit counter which
+uses cookies.  Hit the Reload button to see the count increase."
+
+sample "KTcl Environment" environment.ktcl "Examine the special
+web variables set by the Kinetic Engine."
+
+sample "GET Processing" environment.ktcl?name=Mark&Company=AsiaInfo "
+This URL sends two parameters via the HTTP GET protocol.  Notice
+the QUERY array."
+
+sample "POST Processing" environment.ktcl "
+This URL sends two parameters via the HTTP POST protocol.  Notice
+the QUERY array. NEEDS AN EXTRA BUTTON HERE"
+
+sample "Error Handling (syntax)" error-handling1.ktcl "This page has an
+intentional syntax error to show how errors are handled."
+
+sample "Error Handling (runtime)" error-handling2.ktcl "This page has an
+intentional runtime error to show how errors are handled."
+
+sample "Web Host Status" hoststat.ktcl "Shows the current load of
+this machine. This page shows how easy administrative commands
+are to write."
+
+sample "What time is it?" time.ktcl "See the current time.  Press
+Reload to see the time updated.  Isn't this easier than looking
+at your watch?"
+
+</tcl>

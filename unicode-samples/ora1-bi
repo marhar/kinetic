@@ -1,0 +1,3 @@
+update accounts set
+            cn='0eg'
+            where nid= 2161

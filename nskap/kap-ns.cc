@@ -1,0 +1,880 @@
+//----------------------------------------------------------------------
+// kap-ns.cc -- KAP plugin for netscape
+//----------------------------------------------------------------------
+// This file is part of KAP, the Kinetic Application Processor.
+// Copyright (c) 1999, AsiaInfo Technologies, Inc.
+//
+// See the file kap-license.txt for information on usage and
+// redistribution of this file, and for a DISCLAIMER OF ALL
+// WARRANTIES.  Share and Enjoy!
+//
+// The KAP home page is: http://www.markharrison.net/kap
+//----------------------------------------------------------------------
+// Author: Mark Harrison, Weiliang Yan
+// Description: Netscape Enterprise Server plugin. Retrieve request
+//     from the web server, send it to the backend engine and
+//     get the answer from the engine and send it back to the
+//     web servder.
+//----------------------------------------------------------------------
+
+#include <stdio.h>
+#include <signal.h>
+#include <sys/signal.h>
+#include <base/pblock.h>
+#include <frame/log.h>
+#include <base/file.h>
+#include <pthread.h>
+
+#undef sem_init
+#undef sem_terminate
+#undef sem_grab
+#undef sem_tgrab
+#undef sem_release
+
+#include <semaphore.h>
+
+extern "C" {
+int kap_init(pblock *pBlock, Session *pSession, Request *pRequest);
+int kap_conn(pblock *pBlock, Session *pSession, Request *pRequest);
+}
+
+#define DBG if (parms.debug != 0) printf
+
+////////////////////////////////////////////////////////////////
+// common data
+////////////////////////////////////////////////////////////////
+
+static char fileid[] =
+"$Id: kap-ns.cc,v 1.3 2000/03/23 06:19:59 fanzg Exp $";
+
+enum _busy {CHANNEL_BUSY, CHANNEL_IDLE};
+
+#define MAX_BUF_SIZE 512
+
+// this structure contains all parameters set in the
+// http configuration file.
+
+struct _parms {
+    char engine_path[256];	// path to engine executable
+    char initfile[256];		// path to init file
+    char pipedir[256];		// directory for comm pipes
+    int max_pipes;		// number of engines
+    int timeout;		// processing timeout (in seconds)
+    int debug;			// debug flag
+} parms;
+
+// comchannel contains all the data necessary for a thread to
+// communicate with an engine.  In addition to the input and
+// output channels, it has a per-channel timing thread.
+
+#define TM_IDLE     0
+#define TM_COUNTING 1
+
+struct comchannel {
+    FILE* in;		// input channel from engine
+    FILE* out;		// output channel from engine
+    int count;          // how many pages have been served
+    enum _busy busy;	// busy flag -- is engine in use?
+    pid_t pid;		// pid of engine
+    int next;
+    pthread_t wktid;	// timer thread
+    pthread_t tmtid;	// timer thread
+    int       tmstate;	// timer state (idle/counting)
+    time_t    tmexpire;	// expiratin time
+    // stats for reporting
+    char myuri[300];	// uri we are serving
+} pipes[512];
+
+// chnl controls access to the function kap_conn().  We
+// initialize N channels, and initialize the semaphore
+// count to N.  This guarantees that we will always be
+// able to find an open channel in the array.  In Dining
+// Philosopher terms, we only let N-1 philosophers into
+// the room.
+//
+// wrtlck controls access to the channel array.  Before a thread
+// is allowed to search for an open channel, it must obtain
+// wrtlck.  It is initialized in kap_init() and used only in
+// find_idle_channel().
+
+sem_t chnl;
+sem_t wrtlck;
+
+////////////////////////////////////////////////////////////////
+//common functions
+////////////////////////////////////////////////////////////////
+
+static int writeToClient(Session * pSession, char const * cpString)
+{
+    int rc;
+    rc = net_write(pSession->csd, (char*) cpString, strlen(cpString));
+    return (rc != IO_ERROR);
+}
+
+////////////////////////////////////////////////////////////////
+// TIMER FUNCTIONS
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+// timerChannel -- find which channel a timer belongs to
+////////////////////////////////////////////////////////////////
+
+int timerChannel(pthread_t tid)
+{
+    int i;
+    int channel = -1;
+    for (i = 0; i < parms.max_pipes; ++i) {
+        if (pipes[i].tmtid == tid) {
+            channel = i;
+            break;
+        }
+    }
+    if (channel == -1) {
+        fprintf(stderr, "timerChannel: channel not found: %d\n",
+                tid);
+    }
+    return channel;
+}
+
+////////////////////////////////////////////////////////////////
+// timerCancel -- stop countdown of pending timer
+////////////////////////////////////////////////////////////////
+
+void timerCancel0(int sig)
+{
+    sigset(sig, timerCancel0);
+    int channel = timerChannel(pthread_self());
+
+    pipes[channel].tmstate = TM_IDLE;
+    pipes[channel].tmexpire = 0;
+}
+ 
+////////////////////////////////////////////////////////////////
+// timerCancel -- invoke timerCancel0 in other thread
+////////////////////////////////////////////////////////////////
+
+void timerCancel(int channel)
+{
+    pthread_kill(pipes[channel].tmtid, SIGUSR2);
+}
+ 
+////////////////////////////////////////////////////////////////
+// timerStart0 -- start a countdown timer
+////////////////////////////////////////////////////////////////
+
+void timerStart0(int sig)
+{
+	DBG("----------------------------------------- checkpoint 5\n");
+    sigset(sig, timerStart0);
+
+    int self = pthread_self();
+    int channel = timerChannel(self);
+    time_t now = time(NULL);
+
+    pipes[channel].tmtid = self;
+    pipes[channel].tmstate = TM_COUNTING;
+    pipes[channel].tmexpire = now + parms.timeout;
+}
+ 
+////////////////////////////////////////////////////////////////
+// timerStart -- invoke timerStart0 in other thread
+////////////////////////////////////////////////////////////////
+
+void timerStart(int channel)
+{
+    pthread_t self = pthread_self();
+    pipes[channel].wktid = self;
+	DBG("----------------------------------------- checkpoint 3\n");
+    pthread_kill(pipes[channel].tmtid, SIGUSR1);
+	DBG("----------------------------------------- checkpoint 4\n");
+}
+
+////////////////////////////////////////////////////////////////
+// timerInvoke -- action invoked when timer expires
+////////////////////////////////////////////////////////////////
+
+void timerInvoke(int channel)
+{
+    printf("INVOKING TIMER for channel %d\n", channel);
+    kill(pipes[channel].pid, SIGTERM);
+    sleep(3);  // a little bit of time to clean up
+    kill(pipes[channel].pid, SIGKILL);
+}
+
+////////////////////////////////////////////////////////////////
+// timerMachine -- main loop for timer thread
+////////////////////////////////////////////////////////////////
+ 
+void* timerMachine(void*)
+{
+    int rc;
+    time_t now;
+    int interval;
+    pthread_t self = pthread_self();
+    int channel = timerChannel(self);
+
+    DBG("timerMachine: starting timer %d\n", channel);
+
+    sigset(SIGUSR1, timerStart0);
+    sigset(SIGUSR2, timerCancel0);
+
+    if (channel == -1) {
+        fprintf(stderr, "timer: Channel not found, shutting down!\n");
+        return 0;
+    }
+ 
+    while (1) {
+        switch (pipes[channel].tmstate) {
+        case TM_IDLE:
+            interval = 10;
+            break;
+        case TM_COUNTING:
+            now = time(NULL);
+            interval = pipes[channel].tmexpire - now;
+            break;
+        }
+        rc = sleep(interval);
+ 
+        if (pipes[channel].tmstate == TM_COUNTING) {
+            now = time(NULL);
+            if (now >= pipes[channel].tmexpire) {
+                pipes[channel].tmexpire = 0;
+                pipes[channel].tmstate = TM_IDLE;
+                timerInvoke(channel);
+            }
+        }
+    }
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////
+// Description: Analyze pblock structures and send the getting
+//             information to engine.
+// Input parameter: pb --- the pblock waiting to be analyzed.
+//                 channel --- the communication channel to engine.
+// Return: 0 successful
+////////////////////////////////////////////////////////////////
+
+int pblock_analyzer(pblock *pb, int channel)
+{
+    if (pb == 0)
+        return 1;
+
+    for (int i = 0; i < pb->hsize; i++) {
+        if ((pb->ht)[i] != 0) {
+            /*
+            FILE *foo = fopen("/tmp/pb.out", "a");
+            fprintf(foo, "%s=%s\n",
+                    (pb->ht)[i]->param->name,
+                    (pb->ht)[i]->param->value);
+            fclose(foo);
+            */
+            fprintf(pipes[channel].out, "%s=%s\n",
+                    (pb->ht)[i]->param->name,
+                    (pb->ht)[i]->param->value);
+        }
+    }
+    fflush(pipes[channel].out);
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////
+// Description: Search for a idle channel
+// Input parameter: NULL
+// Return: the channel number
+//        -1 if all channels are busy. It is abnormal situation
+//        and should never occur.
+////////////////////////////////////////////////////////////////
+
+int find_idle_channel (void)
+{
+    static int next = 0;
+    int retval = -1;
+
+    sem_wait(&wrtlck);
+    //DBG("+++++++write lock was set.\n");
+    for (int loop = 0; loop < parms.max_pipes; loop++) {
+        //DBG("-----checking channel %d ...\n", next);
+        if (pipes[next].busy == CHANNEL_IDLE) {
+            pipes[next].busy = CHANNEL_BUSY;
+            retval = next;
+            if (next == parms.max_pipes - 1) next = 0;
+            else next++;
+            break;
+        }
+        if (next == parms.max_pipes - 1)
+            next = 0;
+        else
+            next++;
+    }
+    sem_post(&wrtlck);
+    //DBG("------write lock was released.\n");
+    if (retval == -1) {
+        fprintf(stderr, "find_idle_channel: internal error 1.\n");
+        fflush(stderr);
+    }
+    return retval;
+}
+    
+////////////////////////////////////////////////////////////////
+// Description: Do a shell command
+// Input parameter: cmd --- command string
+// Return: 0 if succeeded
+//        -1 if failed
+////////////////////////////////////////////////////////////////
+
+int docmd3(char* cmd, char* p1, char* p2)
+{
+    int pid;
+    int rc;
+    pid = fork();
+    switch (pid) {
+    case -1:
+        perror("cannot fork");
+        rc = 1;
+        break;
+    case 0:
+        if (execlp(cmd, cmd, p1, p2, 0) == -1) {
+            perror("cmd");
+            rc = 0;
+            exit(1);
+        }
+        break;
+    default:
+        rc = 0;
+        break;
+    }
+    return rc;
+}
+
+////////////////////////////////////////////////////////////////
+// Description: Start create communication pipe, backend engine
+//             and get the engine's pid.
+// Input parameter: id --- the id of this engine.
+//                 pSession --- relayed by the caller from web
+//                 server for writing log.
+//                 pRequest --- relayed by the caller from web
+//                 server for writing log.
+// Return: 0 if successful
+//        1 if failed
+////////////////////////////////////////////////////////////////
+
+int start_eng(int id, Session *pSession, Request *pRequest)
+{
+    char fromeng[256];
+    char toeng[256];
+    char cmd[1024];
+    char _pid[64];
+    int myerr = 0;
+
+    pipes[id].count = 0;
+    strcpy(pipes[id].myuri, "-idle-");
+    sprintf(fromeng, "%s/pipe%02d-2s", parms.pipedir, id);
+    sprintf(toeng, "%s/pipe%02d-2c", parms.pipedir, id);
+
+    // actually only loop once to avoid goto.
+    // ywl set this up, later move error to inside "if"
+    while (1) {
+        unlink(fromeng);
+        if (mknod(fromeng, S_IFIFO|0666, (dev_t)0) != 0) {
+            myerr = 1;
+            break;
+        }
+
+        unlink(toeng);
+        if (mknod(toeng, S_IFIFO|0666, (dev_t)0) != 0) {
+            myerr = 1;
+            break;
+        }
+        // start logic engine
+printf("---------------------------\n");
+printf("pwd:\n");
+system("pwd");
+printf("---------------------------\n");
+        sprintf(cmd, "%s -i %s %s %s &", parms.engine_path, parms.initfile, fromeng, toeng);
+        if (docmd3(parms.engine_path, fromeng, toeng) != 0) {
+            myerr = 2;
+            break;
+        }
+        // open read pipes
+        if ((pipes[id].in = fopen(fromeng, "r")) == NULL) {
+            myerr = 3;
+            break;
+        }
+        // open write pipes
+        if ((pipes[id].out = fopen(toeng, "w")) == NULL) {
+            myerr = 3;
+            break;
+        }
+        break; //all above are successful.
+    }
+
+    switch (myerr) {
+    case 0:
+
+        pipes[id].busy = CHANNEL_IDLE;
+        //get engine's pid
+        DBG("Receiving engine pid ...\n");
+        fgets(_pid, sizeof(_pid), pipes[id].in);
+        pipes[id].pid = (pid_t)(atol(_pid));
+        // now pre-cleanup pipes.  we know connections are
+        // ok because both open's above were successful.
+        unlink(fromeng);
+        unlink(toeng);
+
+        if (parms.timeout > 0) {
+            // cancel old thread if it exists
+            if (pipes[id].tmtid != 0) {
+                pthread_cancel(pipes[id].tmtid);
+            }
+
+            // start timer thread
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+            pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
+
+            pipes[id].tmstate = TM_IDLE;
+            pipes[id].tmexpire = 0;
+            pipes[id].wktid = pthread_self();
+            pthread_create(&pipes[id].tmtid, &attr, timerMachine, NULL);
+            // this call to sleep seems to stop the apparent creation
+            // of two threads by the pthread_create call.  Need to
+            // investigate further.
+            sleep(1);
+        }
+
+        return 0;
+    case 1:
+        fprintf(stderr, "Cannot create channel %d:\n\t", id);
+        perror("mknod");
+        log_error(LOG_FAILURE, "kap_init", pSession, pRequest,
+                  "Cannot create channel %d... ABORTED!!!", id);
+        break;
+    case 2:
+        fprintf(stderr, "Failed to start engine %d:\n\t", id);
+        perror(cmd);
+        log_error(LOG_FAILURE, "kap_init", pSession, pRequest,
+                  "Failed to start engine %d... ABORTED!!!", id);
+        break;
+    case 3:
+        fprintf(stderr, "Cannot open channel %d... ABORTED!!!\n\t", id);
+        perror("open channel");
+        log_error(LOG_FAILURE, "kap_init", pSession, pRequest,
+                  "Cannot open channel %d... ABORTED!!!", id);
+        break;
+    default:
+        fprintf(stderr, "Unknown error code... ABORTED!!! \n");
+        log_error(LOG_FAILURE, "kap_init", pSession, pRequest,
+                  "Unknown return code from start_eng! ABORTED!!!");
+    }
+
+    fflush(stderr);
+    return 1;
+}
+
+////////////////////////////////////////////////////////////////
+//
+// Description: process engine communication error
+// Input parameter: 
+// Return:  void
+//
+////////////////////////////////////////////////////////////////
+
+void checkengine(char* msg, int chan)
+{
+//******* TODO should log the restart
+    printf("restarting channel %d\n", chan);
+    //start_eng(chan, pSession, pRequest)
+    if (start_eng(chan, 0, 0) != 0) {
+        // need to report an error...
+        // also need to figure out what to do with
+        // pSession and pRequest
+    }
+}
+
+////////////////////////////////////////////////////////////////
+//
+// Description: Get information from Enterprise Server and send
+//        them to engine.
+// Input parameter: channel --- The sending channel (to which engine).
+//                 others --- Standard nsapi parameters.
+// Return:  0 if successful
+//        -1 if error occur during getting information from Web server.
+//
+////////////////////////////////////////////////////////////////
+
+int send2engine(int channel, pblock *pBlock,
+                Session *pSession, Request *pRequest) 
+{
+    int erc;
+
+    //Get REQUEST METHOD and REQUEST STRING and send them to engine.
+    char* method = pblock_findval("method", pRequest->reqpb);
+    char* req_str = pblock_findval("clf-request", pRequest->reqpb);
+
+    if (!strcmp(method, "GET") || !strcmp(method, "HEAD") ||
+       !strcmp(method, "POST")) {
+        fprintf(pipes[channel].out, "%s\n", req_str);
+    } else {
+        log_error(LOG_FAILURE, "kap_conn", pSession, pRequest,
+                  "Got an invalid REQUEST METHOD.");
+        return -1;
+    }
+
+    //Get POST data if REQUEST METHOD is POST
+    char req_data[MAX_BUF_SIZE + 1];
+    int content_length;
+    if (strcmp(method, "POST") == 0) {
+        char* _length = pblock_findval("content-length",
+                                        pRequest->headers);
+        if (_length == 0) {
+            log_error(LOG_FAILURE, "kap_conn", pSession, pRequest,
+                      "Got an invalid CONTENT-LENGTH.");
+            return -1;
+        }
+        content_length = atoi(_length);
+        if (content_length < 0 ) {
+            log_error(LOG_FAILURE, "kap_conn", pSession, pRequest,
+                      "Got an negative CONTENT-LENGTH.");
+            return -1;
+        }
+        int ichar = 1;
+        int i = 0;
+        while (content_length) {
+            i = 0;
+            while (i < MAX_BUF_SIZE && ichar != IO_EOF) {
+                ichar = netbuf_getc(pSession->inbuf);
+                if (ichar == IO_ERROR) {
+                    log_error(LOG_FAILURE, "kap_conn", pSession,
+                               pRequest,
+                               "Failed to get POST REQUEST DATA.");
+                    return -1;
+                }
+                //DBG("char from netbuf --- %c\n", ichar);
+                req_data[i++] = ichar; 
+                content_length--;
+                if (content_length == 0) break;
+            }
+            req_data[i] = '\0';
+            fprintf(pipes[channel].out, "%s", req_data);
+        }
+        fprintf(pipes[channel].out, "\n");
+    }
+
+    //Send all information in the pblock structure to engine.
+    pblock_analyzer(pSession->client, channel);
+    pblock_analyzer(pRequest->vars, channel);
+    pblock_analyzer(pRequest->reqpb, channel);
+    pblock_analyzer(pRequest->headers, channel);
+    pblock_analyzer(pBlock, channel);
+
+    fprintf(pipes[channel].out, "\n");
+    erc = fflush(pipes[channel].out);
+    if (erc == EOF) {
+        checkengine("flushing to engine", channel);
+        log_error(LOG_FAILURE, "kap_conn", pSession, pRequest,
+                  "error writing to engine");
+        return -1;
+    }
+
+    //End of sending, everything is OK
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////
+//
+// name:   parse1parm
+// desc:   parse a single KAP parameter
+// input:  parameter key
+// return: parameter value or NULL
+//
+////////////////////////////////////////////////////////////////
+
+char* parse1(char* key, pblock* pBlock)
+{
+    return pblock_findval(key, pBlock);
+
+}
+
+////////////////////////////////////////////////////////////////
+//
+// parseParms -- parse KAP parameters from obj.conf
+// Input parameter: standard pblock
+// Return: nothing
+//
+////////////////////////////////////////////////////////////////
+
+int parseParms(pblock* pBlock)
+{
+    char* p;
+    int errs = 0;
+
+    p = parse1("debug", pBlock);
+    parms.debug = p ? atoi(p) : 0;
+
+    p = parse1("engine_path", pBlock);
+    strcpy(parms.engine_path, p ? p : "");
+
+    p = parse1("initfile", pBlock);
+    strcpy(parms.initfile, p ? p : "");
+
+    p = parse1("pipedir", pBlock);
+    strcpy(parms.pipedir, p ? p : "/tmp/nspipes2");
+
+    p = parse1("max_pipes", pBlock);
+    parms.max_pipes = p ? atoi(p) : 4;
+
+    p = parse1("timeout", pBlock);
+    parms.timeout = p ? atoi(p) : 0;
+
+    printf("parms.debug=%d\n", parms.debug);
+    printf("parms.engine_path=%s\n", parms.engine_path);
+    printf("parms.initfile=%s\n", parms.initfile);
+    printf("parms.max_pipes=%d\n", parms.max_pipes);
+    printf("parms.timeout=%d\n", parms.timeout);
+
+    if (strlen(parms.engine_path) == 0) {
+        printf("error: engine_path not specified.\n");
+        errs += 1;
+    }
+
+    return errs;
+}
+
+////////////////////////////////////////////////////////////////
+//
+// Description: Start KAP engines
+// Input parameter: Standards NSAPI interface
+// Return: REQ_PROCEED if succeeded.
+//        REQ_ABORTED if failed
+//
+////////////////////////////////////////////////////////////////
+
+int kap_init(pblock *pBlock, Session *pSession, Request *pRequest)
+{
+    int i;
+    int myerr = 0;
+
+    printf("Starting KAP Netscape plugin, (level $Revision: 1.3 $)...\n");
+    printf("Initializing KAP engines...\n");
+
+    if (parseParms(pBlock) != 0)
+        return REQ_ABORTED;
+
+    // start by creating a set of pipes and opening receiving end
+    mkdir(parms.pipedir, 0777);
+
+    for (i = 0; i < parms.max_pipes; ++i) {
+        if (start_eng(i, pSession, pRequest) != 0) {
+            return REQ_ABORTED;
+        }
+    }
+
+    if (sem_init(&chnl, 0, parms.max_pipes) != 0 ||
+        sem_init(&wrtlck, 0, 1) != 0) {
+        fprintf(stderr, "Initializing semaphores failed.\n");
+        log_error(LOG_FAILURE, "kap_init", pSession, pRequest,
+                  "Initializing semaphores failed.");
+        return REQ_ABORTED;
+    }
+
+    printf("%d KAP engines initialized.\n", parms.max_pipes);
+    fflush(stderr);
+
+    return REQ_PROCEED;
+}
+
+////////////////////////////////////////////////////////////////
+//
+// Description: Get request from HTTP client, transmit the request
+//             to KAP engine, receive the response from KAP engine
+//             Put the KAP engine response to HTTP client, balance
+//             the KAP engine load.
+// Input parameter: Standards NSAPI interface
+// Return: REQ_PROCEED if succeeded.
+//        REQ_ABORTED if failed
+//
+////////////////////////////////////////////////////////////////
+
+int kap_conn(pblock *pBlock, Session *pSession, Request *pRequest)
+{
+    char resp[1024];
+    int channel = -1;
+    int myerr = 0;
+
+    // here is some magic code to look at the internals of the
+    // kap dispatcher.
+
+    char* uri = pblock_findval("uri", pRequest->reqpb);
+    if (uri == 0)
+        uri = (char *)"NULL";
+
+    if (strcmp(uri, "/kap-internals.ktcl") == 0) {
+        int i;
+        char junk[1000];
+        writeToClient(pSession, "<body bgcolor=#ffffff>\n");
+        writeToClient(pSession, "<h1>KAP Server Details</h1>\n");
+        writeToClient(pSession, "The CVS Revision is: $Revision: 1.3 $<br>\n");
+        writeToClient(pSession, "<h2>server parameters</h2>\n");
+        writeToClient(pSession, "<table width=500 border>\n");
+        sprintf(junk, "<tr><td>engine_path</td><td>%s</td></tr>\n",
+                       parms.engine_path);
+        writeToClient(pSession, junk);
+        sprintf(junk, "<tr><td>initfile</td><td>%s</td></tr>\n",
+                       parms.initfile);
+        writeToClient(pSession, junk);
+        sprintf(junk, "<tr><td>pipedir</td><td>%s</td></tr>\n",
+                       parms.pipedir);
+        writeToClient(pSession, junk);
+        sprintf(junk, "<tr><td>max_pipes</td><td>%d</td></tr>\n",
+                       parms.max_pipes);
+        writeToClient(pSession, junk);
+        sprintf(junk, "<tr><td>timeout</td><td>%d</td></tr>\n",
+                       parms.timeout);
+        writeToClient(pSession, junk);
+        sprintf(junk, "<tr><td>debug</td><td>%d</td></tr>\n",
+                       parms.debug);
+        writeToClient(pSession, junk);
+        writeToClient(pSession, "</table>\n");
+        writeToClient(pSession, "<p><ul><li>");
+        writeToClient(pSession, "These are from the netscape config \n");
+        writeToClient(pSession, "file, usually .../https/config/obj.conf<p>\n");
+        writeToClient(pSession, "</ul><p>");
+
+        writeToClient(pSession, "<h2>engines</h2>\n");
+        writeToClient(pSession, "<table width=500 border>\n");
+        writeToClient(pSession, "<tr>");
+        writeToClient(pSession, "<td>status</td>");
+        writeToClient(pSession, "<td>pagecount</td>");
+        writeToClient(pSession, "<td>pid</td>");
+        writeToClient(pSession, "<td>elapsed</td>");
+        writeToClient(pSession, "<td>uri</td>");
+        writeToClient(pSession, "</tr>\n");
+        for (i = 0; i < parms.max_pipes; ++i) {
+            time_t now = time(NULL);
+            time_t elapsed;
+            if (pipes[i].busy == CHANNEL_BUSY) {
+                elapsed = now - (pipes[i].tmexpire - parms.timeout);
+            }
+            else {
+                elapsed = 0;
+            }
+            writeToClient(pSession, "<tr>");
+            sprintf(junk, "<td>%s</td>",
+                    (pipes[i].busy == CHANNEL_BUSY) ? "working" : "idle");
+            writeToClient(pSession, junk);
+            sprintf(junk, "<td>%d</td>", pipes[i].count);
+            writeToClient(pSession, junk);
+            sprintf(junk, "<td>%d</td>", pipes[i].pid);
+            writeToClient(pSession, junk);
+            sprintf(junk, "<td>%d</td>", elapsed);
+            writeToClient(pSession, junk);
+            sprintf(junk, "<td>%s</td>", pipes[i].myuri);
+            writeToClient(pSession, junk);
+            writeToClient(pSession, "</tr>\n");
+        }
+        writeToClient(pSession, "</table>\n");
+        writeToClient(pSession, "<p>\n");
+
+        writeToClient(pSession, "<table width=480><tr><td>\n");
+        writeToClient(pSession, "<ul>\n");
+        writeToClient(pSession, "<li>There are <i>max_pipes</i> engines \n");
+        writeToClient(pSession, "running on the server.  <i>status</i> \n");
+        writeToClient(pSession, "shows if the engine is idle or  \n");
+        writeToClient(pSession, "working.\n");
+        writeToClient(pSession, "<li><i>pagecount</i> \n");
+        writeToClient(pSession, "is the number of urls processed by that \n");
+        writeToClient(pSession, "engine. \n");
+        writeToClient(pSession, "<li><i>pid</i> is the process id of \n");
+        writeToClient(pSession, "the engine. \n");
+        writeToClient(pSession, "<li><i>elapsed</i> is the number of \n");
+        writeToClient(pSession, "seconds the engine has been \n");
+        writeToClient(pSession, "processing the page. \n");
+        writeToClient(pSession, "<li><i>uri</i> is the URI of \n");
+        writeToClient(pSession, "the page being processed by the engine. \n");
+        writeToClient(pSession, "If none is currently being processed, \n");
+        writeToClient(pSession, "it will say <i>-idle-</i>. \n");
+        writeToClient(pSession, " \n");
+        writeToClient(pSession, "<li>Any questions, comments, complaints, \n");
+        writeToClient(pSession, "or other useful things you would \n");
+        writeToClient(pSession, "like to see, tell Mark... \n");
+        writeToClient(pSession, "<ul>\n");
+        writeToClient(pSession, "</td></tr></table width=400>\n");
+        writeToClient(pSession, "<p>\n");
+
+        writeToClient(pSession, "</body>\n");
+
+        return REQ_PROCEED;
+    }
+
+    //Check for idle channel. If failed wait for available channel...
+    //DBG(">>>>>>SEMAPHORE COUNTER = %d.\n", chnl.ps_lwp_lock.value);
+    sem_wait(&chnl);
+    //DBG(">>>>>>SEMAPHORE COUNTER after wait = %d.\n", chnl.ps_lwp_lock.value);
+
+    channel = find_idle_channel();
+    DBG("+++++Channel %d is gotten\n", channel);
+    if (channel == -1) {
+        log_error(LOG_FAILURE, "kap_conn", pSession, pRequest,
+                  "KAP plugin got channel id -1.");
+        sem_post(&chnl);
+        return REQ_ABORTED;
+    }
+
+	DBG("----------------------------------------- checkpoint 1\n");
+    timerStart(channel);
+	DBG("----------------------------------------- checkpoint 2\n");
+    pipes[channel].count++;
+    strcpy(pipes[channel].myuri, uri);
+
+    DBG("channel: %d thread: %d count: %d\n",
+      channel, pthread_self(), pipes[channel].count);
+
+    //
+    // send query,  client --> engine
+    //
+    if (send2engine(channel, pBlock, pSession, pRequest) != 0) {
+        writeToClient(pSession, "\n");
+        writeToClient(pSession, "<h1>Server Error...</h1>\n");
+        writeToClient(pSession, "engine not responding (1).\n");
+    }
+    else {
+        //
+        // send response, engine --> client
+        //
+        char* rc;
+        for (;;) {
+            rc = fgets(resp, sizeof(resp), pipes[channel].in);
+            if (rc == NULL) {
+                checkengine("getting from engine", channel);
+                writeToClient(pSession, "\n");
+                writeToClient(pSession, "<h1>Server Error...</h1>\n");
+                writeToClient(pSession, "engine not responding (2).\n");
+                break;
+            }
+            DBG("<<<<<engine: %s", resp);
+            if (resp[0] == '\1' && resp[1] == 'M' &&
+                resp[2] == 'e' && resp[3] == 'A' &&
+                resp[4] == 'o' && resp[5] == 'R' &&
+                resp[6] == 'f' && resp[7] == 'K' &&
+                resp[8] == '>' && resp[9] == '\n' &&
+                resp[10] == 0) {
+                break;
+            }
+            else {
+                writeToClient(pSession, resp);
+            }
+        }
+    }
+
+    timerCancel(channel);
+    pipes[channel].busy = CHANNEL_IDLE;
+    strcpy(pipes[channel].myuri, "-idle-");
+    sem_post(&chnl);
+    DBG("-----channel %d was released.\n", channel);
+    return REQ_PROCEED;
+}
+
+// eof: kap-ns.c

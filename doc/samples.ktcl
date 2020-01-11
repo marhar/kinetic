@@ -1,0 +1,43 @@
+<body bgcolor=#ffffff>
+<tcl>
+    if {![info exists QUERY(page)]} {
+        set QUERY(page) samples2.ktcl
+    }
+</tcl>
+<table border=0 width=100% cellspacing=0 cellpadding=0>
+  <tr valign=top>
+    <td colspan=2><img src=ai100.gif alt="AsiaInfo"</td>
+    <td bgcolor=black colspan=2><img src=kap-banner3.gif></td>
+  </tr>
+  <tr valign=top>
+    <td bgcolor=#947341>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td bgcolor=#947341>
+      <h3>&nbsp;</h3>
+      <a href=samples.ktcl?page=userman.ktcl>User Manual</a><p>
+      <a href=samples.ktcl?page=samples2.ktcl>Samples</a><p>
+      <a href=samples.ktcl?page=tests.ktcl>Test Cases</a><p>
+      <a href=samples.ktcl?page=vetconv.ktcl>VET Conversion</a><p>
+      <a href=samples.ktcl?page=lessons.ktcl>Lesson Outline</a><p>
+      <a href=samples.ktcl?page=todo.ktcl>To-Do list</a><p>
+      <p>&nbsp;
+      <p>&nbsp;
+      <p>&nbsp;
+      <p>&nbsp;
+      <p>&nbsp;
+      <p>&nbsp;
+    </td>
+    <td bgcolor=white>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td bgcolor=white>
+      <img src=spacer-150.gif vspace=0>
+      <tcl>::kap::loadpage $QUERY(page)</tcl>
+    </td>
+  </tr>
+</table>
+<br>
+<hr width=70%>
+<center>
+<a href= http://e3.sw.asiainfo.com:8106>Kinetic Engine for Tcl</a>

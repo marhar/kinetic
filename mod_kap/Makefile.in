@@ -1,0 +1,52 @@
+#-----------------------------------------------------------------------
+# mod_kap/Makefile -- makefile for kap apache plugin
+#-----------------------------------------------------------------------
+# This file is part of KAP, the Kinetic Application Processor.
+# Copyright (c) 1999, AsiaInfo Technologies, Inc.
+#
+# See the file kap-license.txt for information on usage and
+# redistribution of this file, and for a DISCLAIMER OF ALL
+# WARRANTIES.  Share and Enjoy!
+#
+# The KAP home page is: http://www.markharrison.net/kap
+#-----------------------------------------------------------------------
+
+APXS=@APXS@
+APACHECTL=@AP_BINDIR@/apachectl
+
+all: mod_kap.so
+
+mod_kap.so: mod_kap.c
+	$(APXS) -c mod_kap.c
+
+install: all
+	make stop
+	cp -p ../engine/kap-t @AP_LIBEXECDIR@
+	$(APXS) -i -a -n 'kap' mod_kap.so
+
+clean:
+	-rm -f core *.o
+
+clobber: clean
+	-rm -f mod_kap.so
+
+distclean: clobber
+	-rm -f Makefile config.status config.cache config.log
+
+#   simple test
+test: reload
+	lynx -mime_header http://localhost/kap
+
+#   install and activate shared object by reloading Apache to
+#   force a reload of the shared object file
+reload: install restart
+
+#   the general Apache start/restart/stop
+#   procedures
+start:
+	$(APACHECTL) start
+restart:
+	$(APACHECTL) restart
+stop:
+	$(APACHECTL) stop
+

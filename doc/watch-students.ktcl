@@ -1,0 +1,14 @@
+<h2>All Students Work</h2>
+<ul>
+<tcl>
+foreach i [lsort [glob /home01/luban/suitespot/docs/students/stud*/*]] {
+    regsub {/home01/luban/suitespot/docs/} $i http://e3:8106/ i2
+    puts "<li><a href=$i2>$i</a>"
+}
+puts "<h2>The QUERY array</h2>"
+
+	puts "<pre>"
+	parray QUERY
+
+</tcl>
+</ul>

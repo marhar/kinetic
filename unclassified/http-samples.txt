@@ -1,0 +1,77 @@
+req=GET /tests/parse5.ktcl HTTP/1.0
+ip=10.1.9.194
+ntrans-base=/home01/luban/suitespot/docs
+path=/home01/luban/suitespot/docs/tests/parse5.ktcl
+clf-request=GET /tests/parse5.ktcl HTTP/1.0
+method=GET
+protocol=HTTP/1.0
+uri=/tests/parse5.ktcl
+referer=http://e3:8106/tests/
+connection=Keep-Alive
+user-agent=Mozilla/4.5 [en] (X11; I; SunOS 5.5.1 sun4u)
+host=e3:8106
+accept=image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*
+accept-encoding=gzip
+accept-language=en
+accept-charset=iso-8859-1,*,utf-8
+cookie=counter=4
+ 
+req=GET /tests/parse6.ktcl HTTP/1.0
+ip=10.1.9.194
+ntrans-base=/home01/luban/suitespot/docs
+path=/home01/luban/suitespot/docs/tests/parse6.ktcl
+clf-request=GET /tests/parse6.ktcl HTTP/1.0
+method=GET
+protocol=HTTP/1.0
+uri=/tests/parse6.ktcl
+referer=http://e3:8106/tests/
+connection=Keep-Alive
+user-agent=Mozilla/4.5 [en] (X11; I; SunOS 5.5.1 sun4u)
+host=e3:8106
+accept=image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*
+accept-encoding=gzip
+accept-language=en
+accept-charset=iso-8859-1,*,utf-8
+cookie=counter=4
+
+
+
+req=GET /tests/cook1.ktcl HTTP/1.0
+ip=10.1.9.194
+ntrans-base=/home01/luban/suitespot/docs
+path=/home01/luban/suitespot/docs/tests/cook1.ktcl
+clf-request=GET /tests/cook1.ktcl HTTP/1.0
+method=GET
+protocol=HTTP/1.0
+uri=/tests/cook1.ktcl
+referer=http://e3:8106/tests/
+connection=Keep-Alive
+user-agent=Mozilla/4.5 [en] (X11; I; SunOS 5.5.1 sun4u)
+host=e3:8106
+accept=image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*
+accept-encoding=gzip
+accept-language=en
+accept-charset=iso-8859-1,*,utf-8
+cookie=counter=4
+
+
+
+
+req=GET /tests/get1.ktcl?aaa=bbb&ccc=ddd HTTP/1.0
+ip=10.1.9.194
+ntrans-base=/home01/luban/suitespot/docs
+path=/home01/luban/suitespot/docs/tests/get1.ktcl
+clf-request=GET /tests/get1.ktcl?aaa=bbb&ccc=ddd HTTP/1.0
+method=GET
+protocol=HTTP/1.0
+query=aaa=bbb&ccc=ddd
+uri=/tests/get1.ktcl
+connection=Keep-Alive
+user-agent=Mozilla/4.5 [en] (X11; I; SunOS 5.5.1 sun4u)
+host=e3:8106
+accept=image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, image/png, */*
+accept-encoding=gzip
+accept-language=en
+accept-charset=iso-8859-1,*,utf-8
+cookie=counter=4
+

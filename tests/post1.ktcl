@@ -1,0 +1,15 @@
+<HTML>
+<h1>Test for POST</h1>
+<body>
+<form method=post action=post2.ktcl>
+ <p> <STRONG> 1) This is the URL 
+ <INPUT TYPE="text"  NAME=URL VALUE= "http://e3:8106/tests/chinese-post2.ktcl" SIZE=60>
+ <p>
+ <p> <STRONG> 2) This is the Query String 
+ <p>
+ 
+ <INPUT TYPE="text"  NAME=QUERY VALUE="add 123 code_0_str 123 " SIZE=100 >
+ <p><input type="submit">    <input type="reset">
+</FORM>
+</body>
+</html>

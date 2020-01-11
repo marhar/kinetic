@@ -1,0 +1,26 @@
+#-----------------------------------------------------------------------
+# Makefile -- top level KAP makefile
+#-----------------------------------------------------------------------
+# This file is part of KAP, the Kinetic Application Processor.
+# Copyright (c) 1999, AsiaInfo Technologies, Inc.
+#
+# See the file kap-license.txt for information on usage and
+# redistribution of this file, and for a DISCLAIMER OF ALL
+# WARRANTIES.  Share and Enjoy!
+#
+# The KAP home page is: http://www.markharrison.net/kap
+#-----------------------------------------------------------------------
+
+SUBDIRS= common engine @BUILD_APACHE@ @BUILD_NETSCAPE@
+PLUGDIRS= @BUILD_APACHE@ @BUILD_NETSCAPE@
+
+all clean clobber distclean install ::
+	(for i in ${SUBDIRS};do \
+	(cd $$i; ${MAKE} $@);done)
+
+test reload start restart stop :
+	(for i in ${PLUGDIRS};do \
+	(cd $$i; ${MAKE} $@);done)
+
+distclean::
+	rm -f Makefile config.cache config.log config.status

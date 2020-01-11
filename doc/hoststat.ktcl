@@ -1,0 +1,4 @@
+<tcl>
+    puts "<h1>Status for [exec hostname]</h1>"
+    puts "<p>[exec uptime]"
+</tcl>

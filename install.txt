@@ -1,0 +1,118 @@
+Configuring KAP
+---------------
+
+Quick Guide
+-----------
+
+    ./configure; make; make install
+
+Longer Guide
+------------
+
+There are two versions of KAP -- one for netscape, and one
+for apache.  They use the same logic engine (kap-t), but
+different plugins.
+
+You can build and install either or both versions.
+By default, both versions are built.
+
+KAP uses autoconf to configure the system.  Autoconf paramters
+are:
+
+  --enable-apache         build apache version (default ON)
+  --enable-netscape       build netscape version (default ON)
+
+  --enable-apache=no      do not build apache version
+  --disable-apache
+
+  --enable-netscape=no    do not build netscape version
+  --disable-netscape
+
+  --with-apxs=PATH        use apxs (apache config tool) from PATH
+  --with-tcl=DIR          specify location of tcl base dir
+
+If you have a fairly "normal" system, Tcl will reside in
+under /usr/local or /usr.  If not, specify the directory
+where Tcl has been installed:
+
+        --with-tcl=/tmp/mytcl
+
+If you are building the apache plugin, the system needs to
+use the apache installation program "apxs".  If it does
+not reside in /usr/local/bin or /usr/bin you need to
+specify its location:
+
+        --with-apxs=/tmp/apache/bin/apxs
+
+(Many people have difficulty spelling apxs, so be careful, OK?)
+
+Building and Installing KAP
+---------------------------
+
+Once you have run configure, all you need to to is build and
+install.  Like most open source software, just execute
+
+        make
+        make install
+
+Netscape-only installation
+--------------------------
+
+        ./configure --disable-apache
+        make
+        make install
+
+Apache-only installation
+------------------------
+
+        ./configure --disable-netscape
+        make
+        make install
+
+A complicated real-life example
+-------------------------------
+
+I was testing the installation on a solaris box that had
+neither Tcl nor Apache already installed.  So, I installed
+and built Tcl in the directory /tmp/80  (--prefix=/tmp/80)
+and Apache in /tmp/apache (--prefix=/tmp/apache).
+
+So the configure line to build an apache only version of KAP
+with the above installed packages is (split onto three lines):
+
+$ ./configure --with-tcl=/tmp/80 
+              --with-apxs=/tmp/apache/bin/apxs
+              --disable-netscape
+
+
+Installing the User Guide and Test Cases
+----------------------------------------
+
+The subdirectories doc/ and tests/ contain the online
+reference and regression test cases for KAP.  You can
+either copy them into your httpd tree, or make a
+symbolic link to the actual subdirectories.  I prefer
+making the symbolic link, since then I don't need to
+worry about getting them out of sync with the CVS
+repository.
+
+Editing the Apache config files
+-------------------------------
+
+By default, the Apache installation edits the apache
+config file to associate the file extention "*.ktcl"
+with KAP applications.  So if you make a file hello.ktcl
+it will be processed by KAP.
+
+There are other ways to configure the server -- you can
+make a special directory for all KAP files, or you can
+use the per-directory config options to customize how
+KAP files are processed in particular directories.
+
+Editing the Netscape config files
+---------------------------------
+
+Netscape lags behind apache in this area.  You have
+to edit the config file yourself or use the web-based
+admin tool to do so.  I will put some examples here
+shortly.

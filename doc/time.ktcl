@@ -1,0 +1,57 @@
+<h1>The Time</h1>
+<tcl>
+proc etime {args} {
+    if {[llength $args] == 0} {
+        set now [clock seconds]
+        set hh [clock format $now -format %H]
+        set mm [clock format $now -format %M]
+        regsub ^0 $hh "" hh
+        regsub ^0 $mm "" mm
+    } elseif {[llength $args] == 1} {
+        set mm [expr $args%60]
+        set hh [expr $args/60]
+    }
+    switch [expr $mm%5] {
+        0 {set mod ""}
+        1 {set mod "just past "; incr mm -1}
+        2 {set mod "just past "; incr mm -2}
+        3 {set mod "nearly ";    incr mm 2}
+        4 {set mod "nearly ";    incr mm 1}
+    }
+    switch [expr $mm%60] {
+     0 {set mstr ""; if {$mm != 0} {incr hh 1}}
+     5 {set mstr "five minutes past "}
+    10 {set mstr "ten minutes past "}
+    15 {set mstr "a quarter past "}
+    20 {set mstr "twenty minutes past "}
+    25 {set mstr "twenty-five minutes past "}
+    30 {set mstr "half past "}
+    35 {set mstr "twenty-five minutes till "; incr hh}
+    40 {set mstr "twenty minutes till "; incr hh}
+    45 {set mstr "a quarter till "; incr hh}
+    50 {set mstr "ten minutes till "; incr hh}
+    55 {set mstr "five minutes till "; incr hh}
+    }
+    switch [expr $hh%12] {
+     0 {set hstr "twelve o'clock"}
+     1 {set hstr "one o'clock"}
+     2 {set hstr "two o'clock"}
+     3 {set hstr "three o'clock"}
+     4 {set hstr "four o'clock"}
+     5 {set hstr "five o'clock"}
+     6 {set hstr "six o'clock"}
+     7 {set hstr "seven o'clock"}
+     8 {set hstr "eight o'clock"}
+     9 {set hstr "nine o'clock"}
+    10 {set hstr "ten o'clock"}
+    11 {set hstr "eleven o'clock"}
+    }
+    return "it's $mod$mstr$hstr"
+}
+
+    puts "A computer might say the time is: "
+    puts "<b>[clock format [clock seconds] -format %H:%M]</b>"
+    puts "<p>A person might say: <b><i>[etime]</i></b>"
+</tcl>
+
+<p>Which way is better?  You tell me!

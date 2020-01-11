@@ -1,0 +1,89 @@
+# Generated automatically from Makefile.in by configure.
+#-----------------------------------------------------------------------
+# ns-kap/Makefile -- makefile for kap netscape plugin
+#-----------------------------------------------------------------------
+# This file is part of KAP, the Kinetic Application Processor.
+# Copyright (c) 1999, AsiaInfo Technologies, Inc.
+#
+# See the file kap-license.txt for information on usage and
+# redistribution of this file, and for a DISCLAIMER OF ALL
+# WARRANTIES.  Share and Enjoy!
+#
+# The KAP home page is: http://www.markharrison.net/kap
+#-----------------------------------------------------------------------
+
+################################
+# copied from ../config.mk
+################################
+
+####for hpr390.sw.asiainfo.com
+   NETSCAPE=/aitools/kdev/ns
+###   NETSCAPE=/home01/luban/suitespot
+# optimization: -O = optimize, -g = debug
+OPT=-O
+#OPT=-g
+
+# optimization: -O = optimize, -g = debug
+OPT=-O
+#OPT=-g
+
+NETSCAPE_INCLUDE=-I$(NETSCAPE)/plugins/include -DMCC_HTTPD -DXP_UNIX
+
+CXXFLAGS= $(APACHE_INCLUDE)
+
+# these are the options needed for Solaris
+# if anybody uses the netscape server on a non-solaris
+# system, please let me know.
+#
+# MT=multithreaded, NS=netscape, SO=shared library
+
+CXX=gcc
+#MTFLAGS=-KPIC -z text -xs -DSOLARIS
+MTFLAGS= +z -DHPUX -D_REENTRANT  -D_THREAD_SAFE \
+	-DRWSTD_MULTI_THREAD -DRW_MULTI_THREAD
+NSFLAGS=-I$(NETSCAPE)/include -DMCC_HTTPD -DXP_UNIX
+SOFLAGS=-G
+PTHREAD_LIB =
+
+################################
+# END copied from ../config.mk
+################################
+
+all: kap-ns.sl 
+
+kap-ns.sl: kap-ns.cc
+	$(CXX) $(OPT) $(MTFLAGS) $(NSFLAGS) -c kap-ns.cc -o kap-ns.o
+	$(CXX) $(SOFLAGS) -o kap-ns.sl kap-ns.o
+
+clean:
+	-rm -f *.o core
+
+clobber: clean
+	-rm -f kap-ns.sl
+
+distclean: clobber
+	-rm -f Makefile config.status config.cache config.log
+
+
+install: all
+	@echo how to install
+	cp kap-ns.sl ${PROD_PA}/center/lib 
+
+
+#   simple test
+test: reload
+        ###lynx -mime_header http://localhost/kap
+
+#   install and activate shared object by reloading Apache to
+#   force a reload of the shared object file
+reload: install restart
+
+#   the general Apache start/restart/stop
+#   procedures
+start:
+        ###$(APACHECTL) start
+restart:
+        ###$(APACHECTL) restart
+stop:
+        ###$(APACHECTL) stop
+

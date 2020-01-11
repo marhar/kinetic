@@ -1,0 +1,23 @@
+<tcl>
+
+proc pglob {a} {
+    global $a
+    puts <h3>$a</h3>
+    puts <table>
+    foreach i [lsort [array names $a]] {
+        #puts "<li>$a\($i\) = [set [set a]($i)]<br>"
+        puts "<tr><td>$i</td><td>[set [set a]($i)]</td></tr>"
+    }
+    puts </table>
+}
+
+pglob COOKIES
+pglob QUERY
+pglob CGI
+
+set dir [file dirname $CGI(path)]
+
+puts dir=$dir<br>
+<pre>
+set
+</tcl>

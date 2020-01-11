@@ -1,0 +1,5 @@
+<tcl>
+for {set a 0} {$a < 10} {incr a} {
+    puts "<br>a=$a"
+}
+</tcl>

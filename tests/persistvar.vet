@@ -1,0 +1,10 @@
+<tcl>
+if {[namespace children :: ::mark] == ""} {
+    namespace eval ::mark {
+        set ::mark::x 0
+    }
+}
+
+incr ::mark::x
+puts "x = $::mark::x"
+</tcl>

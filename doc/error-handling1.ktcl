@@ -1,0 +1,6 @@
+<h1>Intentional error</h1>
+This page has an intentional syntax error, so you can see
+the error message.
+<tcl>
+    pust "this command is incorrectly spelled"
+</tcl>

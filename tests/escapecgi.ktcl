@@ -1,0 +1,8 @@
+<pre>
+<tcl>
+parray ::kap::formMap
+foreach word {aaa :::} {
+    set word2 [::kap::escapecgi $word]
+    puts "$word,$word2"
+}
+</tcl>

@@ -1,0 +1,8 @@
+<tcl>
+if {![info exists QUERY(page)]} {
+    puts "usage: http://.../redirect.ktcl?page=site"
+} else {
+    ::kap::redirect $QUERY(page)
+    puts "This page is being redirected to $QUERY(page)"
+}
+</tcl>

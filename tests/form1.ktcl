@@ -1,0 +1,20 @@
+<h1>Test some forms</h1>
+
+<h2>get</h2>
+
+1.21 engine has bug in query processing:<p>
+<a href=form2.ktcl>form2.ktcl</a>
+ -- OK, totally empty<p>
+<a href=form2.ktcl?>form2.ktcl?</a>
+ -- BAD, single "?" crashes engine<p>
+<a href=form2.ktcl?a=b>form2.ktcl?a=b</a>
+ -- OK, has parameters<p>
+
+<h2>post</h2>
+
+<form name=f action=form2.ktcl method=post>
+<input type=submit value="No name">
+ -- BAD, single "?" crashes engine<p>
+<input type=submit name=foo value="I have a value">
+ -- OK, has parameters<p>
+</form>

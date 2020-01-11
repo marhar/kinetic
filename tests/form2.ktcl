@@ -1,0 +1,5 @@
+<pre>
+Query Array:
+<tcl>
+parray QUERY
+</tcl>

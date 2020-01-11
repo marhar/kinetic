@@ -1,0 +1,6 @@
+<tcl>
+::kap::setcookie testcookie1 hello1 asiainfo.com "Mon, 01-Oct-2001 01:01:01 GMT"
+::kap::setcookie testcookie2 hello2 ""  "Mon, 01-Oct-2001 01:01:01 GMT"
+</tcl>
+
+yummy cookies!

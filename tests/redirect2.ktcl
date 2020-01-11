@@ -1,0 +1,7 @@
+<tcl>
+::kap::redirect redirect3.ktcl
+</tcl>
+This page has been locally
+redirected to redirect3.ktcl.
+<p>
+If you are reading this, it probably didn't work.

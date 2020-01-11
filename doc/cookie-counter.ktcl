@@ -1,0 +1,42 @@
+<tcl>
+#---------------------------------------------------------------
+# how to use setcookie.
+#
+# setcookie must appear before any HTML or any puts commands.
+# Otherwise, it will appear as part of the html body and not
+# as part of the http header information.
+# setcookie takes 4 parameters:
+#
+#    ::kap::setcookie name value domain expires
+#
+#    name    -- the name of the cookie
+#    value   -- the value of the cookie
+#    domain  -- the domain for the coookie
+#    expires -- the expiration date of the cookie
+#
+#    if domain == "", then the cookie is sent only to this server.
+#    if expires == "", then the cookie will be deleted at the
+#    end of the browser session.
+#---------------------------------------------------------------
+
+    # get the cookie if it exists.  If it does not exist, we
+    # will set n = 1.
+    if {![info exists COOKIE(counter)]} {
+        set n 1
+    } else {
+        set n [expr $COOKIE(counter) + 1]
+    }
+
+    # now set the cookie to the new value
+    ::kap::setcookie counter $n ""  ""
+</tcl>
+<h1>Cookie Counter</h1>
+<tcl>
+    if {$n == 1} {
+        puts "this is the first time you have visited this page"
+        puts "during this browser session."
+    } else {
+        puts "You have visited this page $n times"
+        puts "during this browser session."
+    }
+</tcl>

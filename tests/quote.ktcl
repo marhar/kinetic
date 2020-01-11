@@ -1,0 +1,21 @@
+<header><title>Test for quote signs</title></header>
+This was causing a problem in that double quote characters
+were being quoted with a backslash.
+<h2>from html</h2><p>
+This is one double quote from html: -->"<--<p>
+This is one left brace from html: -->}<--<p>
+This is one right brace from html: -->{<--<p>
+This is one left bracket from html: -->[<--<p>
+This is one right bracket from html: -->]<--<p>
+This is one dollar sign from html: -->$<--<p>
+This is one backquote from html: -->\<--<p>
+<h2>from tcl</h2>
+<tcl>
+puts "This is one double quote from tcl: -->\"<--<p>"
+puts "This is one left brace from tcl: -->\}<--<p>"
+puts "This is one right brace from tcl: -->\{<--<p>"
+puts "This is one left bracket from tcl: -->\[<--<p>"
+puts "This is one right bracket from tcl: -->\]<--<p>"
+puts "This is one dollar sign from tcl: -->\$<--<p>"
+puts "This is one backquote from tcl: -->\\<--<p>"
+</tcl>

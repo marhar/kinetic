@@ -1,0 +1,9 @@
+<h1>test of return</h1>
+You should see this line.<br>
+Now we will execute <i>return</i>, so you
+should not see anything else.<br>
+<tcl>
+    return
+</tcl>
+<b>You should not see this, there was an <i>error</i>
+processing this page!!!

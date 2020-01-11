@@ -1,0 +1,30 @@
+KAP Change Log
+
+1.  1999/11/04. Extracted from internal CVS repository, deleted a bunch of the
+    useless junk, and tarred it up.
+
+------------------- Released version 0.1 ---------------------
+
+2.  1999/11/05. Lots of makefile cleanup, nuked a lot of unnecessary files,
+    puts some others in unclassified/.  Builds cleanly under
+    solaris.
+
+------------------- Released version 0.2 ---------------------
+
+3.  1999/11/11.  Added config file stuff (but not integrated yet).
+    Fixed apache plugin.  Now it works, but doesn't process cookies
+    and cgi data.  "make install" works.  Regression tests that
+    don't use cookies and cgi data work.
+    
+------------------- Released version 0.3 ---------------------
+
+4.  1999/11/11.  Added autoconf configuration.
+    
+------------------- Released version 0.4 ---------------------
+
+5.  1999/11/22.  Fixed some autoconf stuff.  Added support for
+    GET and POST variables from apache.  If this works, then
+    After some more documentation we will release it as 1.1.
+    Skipping to release 0.9 to demonstrate confidence. :-)
+
+------------------- Released version 0.9 ---------------------

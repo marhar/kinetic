@@ -1,0 +1,36 @@
+proc ../tests/show-query.ktcl {} {
+global env CGI QUERY COOKIE
+puts -nonewline "</html>
+<header>
+<title>QUERY array</title>
+<header>
+<body>
+"
+
+puts "<p>\n<h4>QUERY array</h4>"
+if [info exist QUERY] {
+    set num 0
+    foreach i [array name QUERY] {
+        puts "$num:    $i ---- $QUERY($i)<br>"
+        incr num
+    }
+} else {
+    puts "array QUERY doesn't exist"
+}
+
+puts "<p>\n<h4>COOKIE array</h4>"
+if [info exist COOKIE] {
+    set num 0
+    foreach i [array name COOKIE] {
+        puts "$num:    $i ---- $COOKIE($i)<br>"
+        incr num
+    }
+} else {
+    puts "array COOKIE doesn't exist"
+}
+
+
+puts -nonewline "
+</html>
+"
+}

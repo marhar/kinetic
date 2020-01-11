@@ -1,0 +1,4 @@
+This page will try to rename the "for" command.<p>
+<tcl>
+rename for foo
+</tcl>

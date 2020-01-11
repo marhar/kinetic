@@ -1,0 +1,22 @@
+fix cookie data in apache
+fix cgi data in apache
+figure out sane log file policy
+make independent config file
+
+-------
+
+(Some notes originally by Yan Weiliang. some of these are done.)
+
+1. For global variables, the name space must be used. The namespace must be created in config/kap-init.tcl. Namespace was added in Tcl since v8.0. Then we should upgrade the Tcl package if it is in lower version in field.
+2. For source command the $CWD env variable should be the location of the page. Critical!!!
+3. The parsing procedure of kap-init.tcl should give the error msg. Walkarround: source the kap-init.tcl directly in a tclsh.
+4. The $AIOBS4_HOME/lib/opr.so must be compiled without -lthread. Mark suggested build with -mt option.
+5. The POST variables are stored in CGI array and have nothing to do with env array, such as REMOTE_ADDR, SCRIPT_NAME. Should we port CGI data into env? If we do so how can we clean CGI data from env array after processing?
+6. Now engine writes file code.out into the page local dir. If the server runner have no write access, what will happen?
+7. The plugin don't have timeout mechamism.
+8. The next version should implement with socket to connect to engines.
+9. The special chars in post data must de decoded. Such are crlf, |, etc.
+10.The kap-t.log should be more detail. Suggest to add time, etc.
+11.Chinese support?
+12.The KAP functions other than ::kap::redirect? Such as encode, decode. loadpage.
+13. If the engine run for a long period, should it be restarted periodly?

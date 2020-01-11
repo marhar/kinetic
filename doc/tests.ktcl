@@ -1,0 +1,21 @@
+<h1>KAP ktcl Test Suite</h1>
+These tests demonstrate various features and fixed
+bugs.
+asdfasdf asdfasdf
+
+<tcl>
+foreach f [lsort [glob -nocomplain ../tests/*.ktcl]] {
+}
+puts <table>
+set x 1
+foreach f [lsort [glob -nocomplain /aitools/users/markh/work/products/kinetic/tests/*.ktcl]] {
+    set b [file tail $f]
+    #puts "<td><a href=../tests/$b>$b</a></td>"
+    puts "<td><a href=samples.ktcl?page=../tests/$b>$b</a></td>"
+    if {$x % 4 == 0} {
+        puts <tr>
+    }
+    incr x
+}
+puts </table>
+</tcl>

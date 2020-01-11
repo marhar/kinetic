@@ -1,0 +1,19 @@
+<h1>Kinetic K-Tcl User Maual</h1>
+(fill in more detail on each of these)
+
+<h2>Commands</h2>
+<ul>
+<li>::kap::source
+<li>::kap::loadpage
+<li>::kap::setcookie
+<li>::kap::escapecgi
+<li>::kap::unescapecgi
+</ul>
+
+<h2>Variables</h2>
+<ul>
+<li>CGI
+<li>COOKIES
+<li>QUERY
+<li>env
+</ul>

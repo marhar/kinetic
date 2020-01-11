@@ -1,0 +1,44 @@
+#!/bin/sh
+# the next line restarts using wish \
+exec tclsh8.0 "$0" "$@"
+
+# This file is part of KAP, the Kinetic Application Processor.
+# Copyright (c) 1999, AsiaInfo Technologies, Inc.
+#
+# See the file kap-license.txt for information on usage and
+# redistribution of this file, and for a DISCLAIMER OF ALL
+# WARRANTIES.  Share and Enjoy!
+#
+# The KAP home page is: http://www.markharrison.net/kap
+
+set FILE [lindex $argv 0]
+
+# this is how to start the engine
+# /tmp/kap1 and /tmp/kap2 are named pipes
+# follow the order exactly to prevent blocking
+
+catch {
+    exec rm /tmp/kap1
+    exec rm /tmp/kap2
+    exec mknod /tmp/kap1 p
+    exec mknod /tmp/kap2 p
+}
+exec ./kap-t /tmp/kap1 /tmp/kap2 &
+set in [open /tmp/kap1 r]
+set out [open /tmp/kap2 w]
+fconfigure $out -buffering line
+
+puts $out "GET /$FILE HTTP/1.0"
+puts $out "path=../$FILE"
+puts $out ""
+
+while {1} {
+    gets $in s
+    puts $s
+    if {"\1MeAoRfK>" == $s} {
+        break
+    }
+}
+
+close $in
+close $out

@@ -1,0 +1,126 @@
+<h1>VET to KAP Conversion Guide</h1>
+This document describes the steps you need to take in
+order to convert a VET page to a KAP page.
+
+<tcl>
+proc item {summ text} {
+    #puts "<li><b>$summ</b><br>$text"
+    puts "<dl><dt><b>$summ</b><br><dd><p>$text<p></dd></dl>"
+
+}
+
+puts <dl>
+
+item "1. Rename '*.vet' files to '*.ktcl'" {
+A useful renaming script is in
+<i>/aitools/users/markh/bin/rename-vet-to-ktcl</i>.
+It will generate the correct commands.  Run the program
+in the directory you like, and then cut-and-paste the
+output.
+}
+
+item "2. Change VET commands to equivalent KAP commands" {
+These are:
+<ul>
+<li>vetload --> ::kap::loadpage
+<li>SetCookie --> ::kap::setcookie
+<li>Redirect --> ::kap::redirect
+<li>EscapeCGI --> ::kap::escapecgi
+<li>UnescapeCGI --> ::kap::unescapecgi
+<li>return --> return (stays the same)
+</ol>
+}
+
+item "3. Change VET variables to equivalent KAP variables" {
+These should be mostly compatible.
+<ul>
+<li>CGI --> CGI
+<li>QUERY --> QUERY
+<li>COOKIE --> COOKIE
+</ul>
+<p>
+The <i>env</i> array does not duplicate the contents of
+the <i>CGI</i> array, so if you have a browser related
+variable you should change it to <i>CGI</i>.
+<ul>
+<li>env --> env (for variables set in the environment)
+<li>env --> CGI (for Browser-related variables)
+</ul>
+}
+
+item "4. Put global data into namespaces" {
+None of the VET examples use namespaces -- instead, they
+all use global variables.  This will <i>work</i>, but it
+will lead to confusing code as projects get larger.
+<p>
+For this reason, I <b>strongly</b> suggest that global
+variables be moved to namespaces.  For example, if you
+create an oracle connection in the startup and save the
+file handle, do it like this:
+<p>
+In kap-startup.ktcl:
+<code><pre>
+namespace eval ::obs {
+    set connection [oraconnect ...]
+}
+</pre></code>
+<p>
+In the ktcl page:
+<code><pre>
+orasql $::obs::connection ...
+</pre></code>
+}
+
+item "5. Use correct variable scoping" {
+<b>This is probably the easiest place to make mistakes
+when porting existing code.</b>
+<p>
+VET pages are executed at the global scope, so any
+variables on the page are by default global variables.
+<p>
+For efficiency, KAP caches the bytecodes generated
+by ktcl pages.  This means that the contents of the
+page does not need to be recompiled every time the
+page is loaded.
+<p>
+This means that global variables must be either
+declared global or (better) scoped with "::".
+<p>
+Example:  Oratcl uses the array <i>oramsg</i> for some
+of its status.  You <b>must</b> use correct scoping
+for it to work.
+<code><pre>
+while {[$::oramsg(status) == ...]} {
+    ...
+}
+</pre></code>
+}
+
+item "6. Move <i>source</i> commands to kap-init.tcl" {
+This is mainly for efficiency.  If you move the <i>source</i>
+commands to kap-init.tcl, the files are only read one time.
+If you leave the <i>source</i> commands in the .ktcl pages,
+the files are read (and the procedures recompiled) every time
+the page is accessed.
+}
+
+item "Call Mark for any questions an problem!" {
+The KAP code is very new.  I have a complete
+set of test cases for all the situations I know
+about, but it is very possible that you will
+find a new bug or situation I have not thought
+about.
+<p>
+In addition, if you think of a feature that will
+make KAP easier to use or more useful to you, then
+<b>please</b> tell me about it!
+
+The test cases are <a href=../tests/>here</a>.
+}
+
+puts </dl>
+</tcl>
+
+<p>&nbsp;
+<p>&nbsp;
+<p>&nbsp;

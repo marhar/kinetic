@@ -1,0 +1,4 @@
+<tcl>
+set a 10
+puts "<b>$a</b><br>"
+</tcl>

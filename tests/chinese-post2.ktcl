@@ -1,0 +1,126 @@
+
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<title>class1</title>
+<meta name="GENERATOR" content="Microsoft FrontPage 3.0">
+<meta name="Microsoft Border" content="none">
+<base target="main">
+</head>
+
+<body>
+
+<pre>
+<tcl>
+parray QUERY
+</tcl>
+</pre>
+
+<tcl>
+set add $QUERY(add)
+puts "add=$add<p>"
+set ttt  $QUERY(code_0_str)
+puts "code_0_str=$ttt<p>"
+
+if { [ info exists QUERY(code_0_str) ] } {
+		set code_0_str  $QUERY(code_0_str)
+
+                set tempindex [string first "G" $code_0_str]
+                set templen  [string length $code_0_str]
+
+                set code_0 [string range $code_0_str 0 [expr $tempindex-1] ]
+                set code_0_title [string range $code_0_str \
+                           [expr $tempindex+1] [expr $templen+1] ]
+
+            puts "$code_0_str<p>"
+            puts "$code_0<p>"
+            puts "$code_0_title<p>"
+
+   } else {
+           puts "error get service_type(code_0_str)"
+           return
+          }
+puts "URL:$QUERY(URL)" 
+</tcl>
+
+
+<form method="POST" action="class2.ktcl">
+  <!--webbot bot="SaveResults" startspan U-File="_private/form_results.txt"
+  S-Format="TEXT/CSV" S-Label-Fields="TRUE" --><!--webbot bot="SaveResults" endspan --><p>　</p>
+  <div align="center"><center><table border="0" cellspacing="0" width="280" cellpadding="0">
+    <tr>
+     
+  <td width="280">您欲查询的信息服务类型为
+
+<tcl>
+###
+puts "$code_0_str</td>"
+</tcl>
+
+    </tr>
+    <tr>
+      <td width="280">请您选择欲查信息的大类</td>
+    </tr>
+    <tr>
+      <td height="100" width="280"><div align="center"><center><p><select name="code_1_str" size="4">
+
+
+
+<!--
+global err_msg
+global sybmsg
+global dbcon
+global sybdb
+
+set tabname1 ".dbo.class1"
+set tabname ""
+append  tabname $sybdb $tabname1
+
+
+set sql_cmd ""
+append sql_cmd "select code_1, name from " $tabname "\
+      where service_type=\"" $code_0 "\"" 
+#puts "<p>sql_cmd=$sql_cmd!!!<p>"
+
+  if {[catch {sybsql $dbcon $sql_cmd} sqlres]} {
+  puts "select table error"
+  return
+  }
+
+  set data_row [sybnext $dbcon]
+ 
+  while { $sybmsg(nextrow) != "NO_MORE_ROWS" } {
+  
+  set code_1 [lindex $data_row 0]
+  set name  [lindex $data_row 1]
+  
+  puts  "<option value=\"$code_1\">$name</option>"
+  #set  valueline "<tr><td>  $code_1 </td><td> $name </td></tr>"
+  #puts $valueline
+  
+  set data_row   [sybnext $dbcon]
+  }
+      
+        
+-->
+      </select></td>
+    </tr>
+  </table>
+
+
+
+  </center></div><div align="center"><center><p><input type="submit" value="确定"
+  name="B1">&nbsp; <input type="reset" value="重置" name="B2"></p>
+  </center></div><div align="center"><center><table border="0" cellpadding="0"
+  cellspacing="0" width="281">
+    <tr>
+      <td width="89" height="40"><a href="http://www.asiainfo.com">返回169</a></td>
+      <td width="192"><a href="./zj160.html">返回信息类型选择</a></td>
+    </tr>
+  </table>
+  </center></div>
+</form>
+</body>
+</html>

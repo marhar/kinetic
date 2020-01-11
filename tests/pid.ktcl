@@ -1,0 +1,1 @@
+<tcl>puts pid=[pid]</tcl>

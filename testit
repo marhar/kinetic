@@ -1,0 +1,2 @@
+lynx -source http://127.0.0.1:9090/hello1.ktcl
+lynx -source http://127.0.0.1:9091/hello1.ktcl

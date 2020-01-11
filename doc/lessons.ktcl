@@ -1,0 +1,77 @@
+<tcl>
+source lessprocs.tcl
+
+1. "Programming with KAP"
+2. "What you should know to program with KAP:"
+ul {
+at least some of
+Tcl
+HTML
+HTTP
+CGI
+}
+
+1. "Features of KAP"
+2. "More reliable than NSAPI"
+2. "Easy to Program"
+2. "faster than VET"
+
+1. "KAP Architecture"
+
+1. "Introduction to KAP Coding"
+2. "Hello World in HTML"
+2. "Hello World in KTCL (version 1)"
+2. "Hello World in KTCL (version 2)"
+2. "ktcl tags"
+assignment "1. Hello World" {}
+ul {
+Start the browser, log into e3 server.
+hello.html -- print "hello world" with html
+hello1.ktcl -- copy hello.html to hello1.ktcl
+hello2.ktcl -- print header using HTML, paragraph with tcl
+}
+2. "KAP API"
+2. "Global Variables"
+assignment "2. Simple Programs" {}
+ul {
+loop.ktcl -- count from 1 to 10
+parray1.ktcl -- print the arrays env
+time.ktcl --print the current time
+}
+2. "CGI - GET protocol"
+2. "CGI - POST protocol"
+assignment "3. CGI Programs" {}
+ul {
+parray2.ktcl -- print the arrays env, CGI
+test with some GET parameters
+get1.html -- name, password form
+get2.ktcl -- receive and print the data from get1
+post1.html -- name, password form
+post2.ktcl -- receive and print the data from post1
+}
+2. "CGI - COOKIE protocol"
+assignment "4. COOKIE Programs" {}
+ul {
+cookcounter.ktcl -- count the number of page hits by cookie
+name.ktcl -- modify get2.ktcl to greet user by name
+}
+
+1. "Advanced Features"
+2. "Database Connection"
+2. "::kap commands"
+2. "redirection"
+
+1. "Documentation"
+2. "KAP User Manual"
+2. "KAP Samples"
+2. "KAP Regression Tests"
+2. "VET Conversion"
+
+1. "Beta Quality Areas"
+ul {
+(working on these)
+error reporting
+Automatic Restart
+}
+
+</tcl>

@@ -1,0 +1,30 @@
+<h1>KAP To-do list</h1>
+
+<i>Contact Mark if you would like to add to this list!<br>
+Please let me know what I can do for <b>you</b> to make<br>
+your code/project/product better!</i>
+
+<h2>Bugs, etc.</h2><ul>
+<li>Engine does not restart properly on timeout.
+<li>Properly report errors from kap-init.tcl
+<li>Install program works OK for enterprise server 3.5.1,
+but sometimes has problems with 3.01 and 3.6.
+<li>
+<li>
+</ul>
+
+<h2>Suggestions</h2><ul>
+<li>Add a standard configuration file for engine and plugin, instead
+of putting configuration option in netscape obj.conf.
+<li>Put all KAP related files into its own directory (not in config/).
+<li>Make cache limit configurable.  Is there a way to provide cache
+statistics?
+<li>Add a ::kap::debug mode.
+</ul>
+
+<h2>Ideas</h2><ul>
+<li>Create multiple interpreters to segregate
+<li>Create interface to tcl-pro debugger.
+<li>Add servlet/jsp comparison.
+<li>
+</ul>

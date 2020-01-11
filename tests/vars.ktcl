@@ -1,0 +1,5 @@
+<tcl>
+set a 10
+</tcl>
+a is <$a>
+ok

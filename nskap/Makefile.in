@@ -1,0 +1,62 @@
+#-----------------------------------------------------------------------
+# ns-kap/Makefile -- makefile for kap netscape plugin
+#-----------------------------------------------------------------------
+# This file is part of KAP, the Kinetic Application Processor.
+# Copyright (c) 1999, AsiaInfo Technologies, Inc.
+#
+# See the file kap-license.txt for information on usage and
+# redistribution of this file, and for a DISCLAIMER OF ALL
+# WARRANTIES.  Share and Enjoy!
+#
+# The KAP home page is: http://www.markharrison.net/kap
+#-----------------------------------------------------------------------
+
+INCLUDEDIR=@NSDIR@/plugins/include
+
+CC_CMD=/usr/bin/g++ -fpic -I$(INCLUDEDIR) -DNET_SSL -DLinux -DLINUX -D_REENTRANT
+LD_SHAREDCMD=/usr/bin/g++ -shared
+COMMON_DEFS=-DMCC_HTTPD -DXP_UNIX -DSPAPI20
+
+# optimization: -O = optimize, -g = debug
+OPT=-O
+#OPT=-g
+
+OBJS=kap-ns.o
+
+.cc.o:
+	$(CC_CMD) $(COMMON_DEFS) $(INCLUDE_FLAGS) -c $< 
+
+
+all: kap-ns.so
+
+kap-ns.so: $(OBJS)
+	$(LD_SHAREDCMD) $(OBJS) -o kap-ns.so $(EXTRA_LDDEFINES)
+
+clean:
+	-rm -f *.o core
+
+clobber: clean
+	-rm -f kap-ns.so
+
+distclean: clobber
+	-rm -f Makefile config.status config.cache config.log
+
+install: all
+	cp ../engine/kap-t kap-ns.so @NSDIR@/plugins/lib
+
+#   simple test
+test: reload
+        ###lynx -mime_header http://localhost/kap
+
+#   install and activate shared object by reloading Apache to
+#   force a reload of the shared object file
+reload: install restart
+
+#   the general Apache start/restart/stop
+#   procedures
+start:
+        ###$(APACHECTL) start
+restart:
+        ###$(APACHECTL) restart
+stop:
+        ###$(APACHECTL) stop

@@ -1,0 +1,26 @@
+1.  cp kap-ns.so kap-t $NETSCAPE/plugins/lib
+
+2.  Add to mime.types:
+
+    type=magnus-internal/ktcl             exts=ktcl
+
+3.  Add to obj.conf
+
+    2 lines in global section:
+
+    Init fn="load-modules"
+         shlib="/aitools/kdev/ns/plugins/lib/kap-ns.so"
+         funcs="kap_init,kap_conn"
+    Init fn="kap_init"
+         engine_path="/aitools/kdev/ns/plugins/lib/kap-t"
+         max_pipes="1"
+
+    2 lines in <Object name=default>:
+
+    Service fn="kap_conn"
+            method="(GET|POST)"
+            type="magnus-internal/ktcl"
+    Service type=magnus-internal/ktcl
+            fn=kap_conn
+            type=magnus-internal/ktcl
+            exts=ktcl

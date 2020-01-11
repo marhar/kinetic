@@ -1,0 +1,5 @@
+make
+cd ../mod_kap
+make stop
+make install
+make start

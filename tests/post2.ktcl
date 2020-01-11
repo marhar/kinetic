@@ -1,0 +1,45 @@
+<html>
+<header>
+<title>QUERY array</title>
+<header>
+This page prints the post variables.
+<body>
+<pre>
+<tcl>
+parray QUERY
+</tcl>
+</pre>
+<tcl>
+package require http
+set url $QUERY(URL)
+puts "<p>"
+puts "URL:$url" 
+puts "<p>"
+set query $QUERY(QUERY)
+puts "Orig Query:$query"
+puts "<p>"
+set query [eval "::http::formatQuery $query" ]
+puts "Query:$query"
+puts "<p>" 
+set fd [::http::geturl $url -query $query ]
+set status [::http::status $fd]
+puts "Status:$status"
+set mydata [::http::data $fd]
+puts "<p>" 
+puts "<ul>"
+puts <p>1---<p>
+set len [string length $mydata]
+puts len=$len
+puts <p>2---<p>
+for {set i 0} {$i < $len} {incr i} {
+    puts -nonewline [string index $mydata $i]
+}
+puts ""
+puts <p>3---<p>
+puts  "mydata=/$mydata/"
+puts <p>4---<p>
+
+puts <p>DONE<p>
+</tcl>
+</html>
+

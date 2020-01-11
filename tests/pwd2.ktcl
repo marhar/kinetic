@@ -1,0 +1,25 @@
+<h1>current directory</h1>
+<tcl>
+# create some other pages to load
+#exec mkdir ../tmp2
+set fd [open ../tmp2/pwd2-2.ktcl w]
+puts $fd "<tcl\>puts \"file pwd2-2.ktcl in directory: \[pwd\]<br>\"</tcl\>"
+puts $fd "<tcl\>::kap::loadpage ../tmp3/pwd2-3.ktcl</tcl\>"
+puts $fd "<tcl\>puts \"file pwd2-2.ktcl in directory: \[pwd\]<br>\"</tcl\>"
+close $fd
+
+#exec mkdir ../tmp3
+set fd [open ../tmp3/pwd2-3.ktcl w]
+puts $fd "<tcl\>puts \"file pwd2-3.ktcl in directory: \[pwd\]<br>\"</tcl\>"
+close $fd
+
+puts "file pwd2.ktcl in directory: [pwd]<br>"
+::kap::loadpage ../tmp2/pwd2-2.ktcl
+puts "file pwd2.ktcl in directory: [pwd]<br>"
+
+# now clean up
+#exec rm ../tmp2/pwd2-2.ktcl
+#exec rm ../tmp3/pwd2-3.ktcl
+#exec rmdir ../tmp2
+#exec rmdir ../tmp3
+</tcl>

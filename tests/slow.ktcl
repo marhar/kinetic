@@ -1,0 +1,9 @@
+<h1>slow request</h1>
+<tcl>
+set seconds 70
+puts "This will take $seconds seconds to load<p>"
+puts "starting...[clock format [clock seconds]]<br>"
+flush stdout
+after [expr $seconds*1000]
+puts "finished...[clock format [clock seconds]]<br>"
+</tcl>

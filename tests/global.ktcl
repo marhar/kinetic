@@ -1,0 +1,26 @@
+<tcl>
+namespace eval ::obs {
+}
+proc f {} {
+    if [info exist ::obs::a] {
+        puts "::obs::a exists<br>::obs::a = $::obs::a<br>"
+    } else {
+        puts "::obs::a doesn't exist<br>"
+    }
+}
+</tcl>
+
+<html>
+<header>
+<title>AI KAP</title>
+<header>
+<body>
+<b>The following is from Tcl script.</b><br>
+<tcl>
+puts "---- Start of Tcl script. ----<br>"
+set ::obs::a 10
+f
+puts "---- End of Tcl script. ----<br>"
+</tcl>
+</html>
+

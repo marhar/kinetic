@@ -1,0 +1,3 @@
+<tcl>
+puts [::kap::about]
+</tcl>

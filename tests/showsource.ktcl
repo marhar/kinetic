@@ -1,0 +1,35 @@
+<tcl>
+
+# http://e3:8106/tests/showsource.ktcl?file=../../../../../etc/passwd
+
+if {![info exists QUERY(file)]} {
+    puts "needs parameter file=filename"
+    return
+}
+
+if {[string match "*../*" $QUERY(file)]} {
+    puts "warning: cannot go above document root"
+    return
+}
+
+set fname [file dirname $CGI(path)]/$QUERY(file)
+
+if {![file isfile $fname]} {
+    puts "file does not exists: $fname"
+    return
+}
+
+set fd [open $fname]
+set contents [read $fd]
+close $fd
+
+regsub -all {&} $contents {\&amp;} contents
+regsub -all {<} $contents {\&lt;} contents
+regsub -all {>} $contents {\&gt;} contents
+regsub -all { } $contents {\&nbsp;} contents
+regsub -all "\n" $contents "<br>\n" contents
+
+puts <h1>$QUERY(file)</h1>
+puts $contents
+
+</tcl>
